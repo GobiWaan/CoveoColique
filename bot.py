@@ -11,6 +11,8 @@ class Bot:
         self.actions = []
         self.corners = []
         self.extended_corners =[]
+        self.spawns = []
+        self.gates = []
     
     def att_corner(self, game_message):
 
@@ -38,6 +40,9 @@ class Bot:
             self.path_sides = self.get_path_sides(game_message)
             self.path_sides = reduce(operator.add, self.path_sides, [])
             random.shuffle(self.path_sides)
+            for path in game_message.map.paths:
+                self.spawns.append(path.tiles[0])
+                self.gates.append(path.tiles[-1])
 
 
         rand = random.random()
@@ -127,6 +132,7 @@ class Bot:
         return empty_tiles
 
     def get_position_for_spear(self, game_message):
+        
         empty_tiles = self.get_empty_tiles(game_message)
 
         def rank_tile(tile):
