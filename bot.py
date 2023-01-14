@@ -10,16 +10,8 @@ class Bot:
         print("Initializing your super mega duper bot")
         self.actions = []
         self.corners = []
-        self.extended_corners = []
-
-    def upgrade(self, game_message):
-        towers = game_message.playAreas[game_message.teamId].towers
-        enough_for_bomb = game_message.teamInfos[game_message.teamId].money >  600
-        for tower in towers:
-            if tower == "SPEAR_SHOOTER" and enough_for_bomb:
-                self.actions.append(SellAction(tower.position))
-                self.actions.append(BuildAction(TowerType.BOMB_SHOOTER, tower.position))
-
+        self.extended_corners =[]
+    
     def att_corner(self, game_message):
 
         if not self.corners:
@@ -49,35 +41,32 @@ class Bot:
 
 
         rand = random.random()
-        enough_for_bomb = game_message.teamInfos[game_message.teamId].money >  600
-        enough_for_spike = game_message.teamInfos[game_message.teamId].money > 280
-        enough_for_spear = game_message.teamInfos[game_message.teamId].money > 200 
-        if rand < 0.3:
+
+
+        if rand < 0.1:
             if other_team_ids:
-                if game_message.round < 10 and game_message.teamInfos[game_message.teamId].money > 15 :
-                    self.actions.append(SendReinforcementsAction(EnemyType.LVL1, random.choice(other_team_ids)))
+                if game_message.round < 10:
+                    actions.append(SendReinforcementsAction(EnemyType.LVL1, random.choice(other_team_ids)))
                 else:
-                    self.actions.append(SendReinforcementsAction(EnemyType.LVL5, random.choice(other_team_ids)))
-        else:
-            if 0.3 < rand < 0.6:
-                for coins_par_path in self.corners:
-                    for coin in coins_par_path:
-                        if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None and enough_for_spike:
-                            self.actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
-                            break
-            elif 0.6 < rand < 0.8:
+                    actions.append(self.random_attack(game_message, random.choice(other_team_ids)))
+        elif 0.1 < rand < 0.45:
+            for coins_par_path in self.corners:
+                for coin in coins_par_path:
+                    if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None:
+                        actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
+                        break
+            if not actions:
                 for side in self.path_sides:
-                    if game_message.playAreas[game_message.teamId].get_tile_at(side) is None and enough_for_spike:
-                        self.actions.append(BuildAction(TowerType.SPIKE_SHOOTER, side)) 
-            else:
-                if enough_for_spear:
-                    self.actions.append(BuildAction(TowerType.SPEAR_SHOOTER, random.choice(self.get_empty_tiles(game_message))))
-                elif enough_for_bomb:
-                    self.upgrade(game_message)
+                    if game_message.playAreas[game_message.teamId].get_tile_at(side) is None:
+                        actions.append(BuildAction(TowerType.SPIKE_SHOOTER, side)) 
+        else:
+            #actions.append(BuildAction(TowerType.SPEAR_SHOOTER, random.choice(self.get_empty_tiles(game_message))))
+            if self.get_empty_tiles(game_message):
+                actions.append(BuildAction(TowerType.SPEAR_SHOOTER, self.get_position_for_spear(game_message)))
 
-        return self.actions
+        return actions
 
-    def get_path_sides(self, game_message: GameMessage):
+    def get_path_sides(self, game_message: GameMessage) -> List[List[Position]]:
         w, h = game_message.map.width, game_message.map.height
 
         sides_per_path = []
@@ -118,7 +107,7 @@ class Bot:
         return corners
     
     def random_attack(self, game_message: GameMessage, team_id):
-        attack = choice(game_message.shop.reinforcements.keys())
+        attack = choice(list(game_message.shop.reinforcements.keys()))
         return SendReinforcementsAction(attack, team_id)
     
     def get_empty_tiles(self, game_message: GameMessage) -> List[Position]:
@@ -128,7 +117,24 @@ class Bot:
 
         for i in range(w):
             for j in range(h):
-                if game_message.playAreas[game_message.teamId].is_empty(Position(i, j)):
+                if game_message.playAreas[game_message.teamId].get_tile_at(Position(i, j)) is None:
                     empty_tiles.append(Position(i, j))
         
         return empty_tiles
+
+    def get_position_for_spear(self, game_message):
+        empty_tiles = self.get_empty_tiles(game_message)
+
+        def rank_tile(tile):
+            c = 0
+            for i in range(-2, 3):
+                for j in range(-2, 3):
+                    t = game_message.playAreas[game_message.teamId].get_tile_at(Position(tile.x+i, tile.y+j))
+                    if t is not None and t.paths:
+                        c += 1
+            return c
+
+        empty_tiles.sort(key=rank_tile)
+
+        return empty_tiles[-1]
+            
