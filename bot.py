@@ -56,10 +56,10 @@ class Bot:
                         if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None:
                             actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
                             break
-            elif 0.6 < rand < 0.8:
-                for side in self.path_sides:
-                    if game_message.playAreas[game_message.teamId].get_tile_at(side) is None:
-                        actions.append(BuildAction(TowerType.SPIKE_SHOOTER, side)) 
+                if not actions:
+                    for side in self.path_sides:
+                        if game_message.playAreas[game_message.teamId].get_tile_at(side) is None:
+                            actions.append(BuildAction(TowerType.SPIKE_SHOOTER, side)) 
             else:
                 actions.append(BuildAction(TowerType.SPEAR_SHOOTER, random.choice(self.get_empty_tiles(game_message))))
 
