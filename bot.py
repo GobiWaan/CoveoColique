@@ -42,11 +42,16 @@ class Bot:
 
         rand = random.random()
 
+        if not self.get_empty_tiles(game_message):
+            rand = 0
+
 
         if rand < 0.1:
             if other_team_ids:
                 if game_message.round < 10:
                     actions.append(SendReinforcementsAction(EnemyType.LVL1, random.choice(other_team_ids)))
+                elif game_message.round > 20:
+                    actions.append(SendReinforcementsAction(EnemyType.LVL8, random.choice(other_team_ids)))
                 else:
                     actions.append(self.random_attack(game_message, random.choice(other_team_ids)))
         elif 0.1 < rand < 0.45:
@@ -56,9 +61,8 @@ class Bot:
                         actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
                         break
             if not actions:
-                for side in self.path_sides:
-                    if game_message.playAreas[game_message.teamId].get_tile_at(side) is None:
-                        actions.append(BuildAction(TowerType.SPIKE_SHOOTER, side)) 
+                if self.get_empty_tiles(game_message):
+                    actions.append(BuildAction(TowerType.SPEAR_SHOOTER, self.get_position_for_spear(game_message)))
         else:
             #actions.append(BuildAction(TowerType.SPEAR_SHOOTER, random.choice(self.get_empty_tiles(game_message))))
             if self.get_empty_tiles(game_message):
@@ -136,5 +140,4 @@ class Bot:
 
         empty_tiles.sort(key=rank_tile)
 
-        return empty_tiles[-1]
-            
+        return random.choice(empty_tiles[-int(len(empty_tiles)/3):])
