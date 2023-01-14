@@ -30,8 +30,7 @@ class Bot:
         Here is where the magic happens, for now the moves are not very good. I bet you can do better ;)
         """
 
-        actions = list()
-
+        actions = []
         other_team_ids = [team for team in game_message.teams if team != game_message.teamId]
 
         if not self.corners:
@@ -108,7 +107,7 @@ class Bot:
     
     def random_attack(self, game_message: GameMessage, team_id):
         attack = choice(game_message.shop.reinforcements.keys())
-        self.actions.append(SendReinforcementsAction(attack, team_id))
+        return SendReinforcementsAction(attack, team_id)
     
     def get_empty_tiles(self, game_message: GameMessage) -> List[Position]:
         w, h = game_message.map.width, game_message.map.height
