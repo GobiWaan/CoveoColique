@@ -1,39 +1,39 @@
 from game_message import *
 from actions import *
-import queue
-
+from random import shuffle
 def Basic_strategy(game_message: GameMessage):
     pass
 
-def queu_filler(game_message ,list_of_corner: list) -> order:
-    # list_of_corner : [[][]...[]]
 
-    order = queue.Queue()
-    lenght = [len(path) for path in list_of_corner]
-    for i in range(0, max(lenght)):
-        for path in list_of_corner:
-            if game_message.playAreas[game_message.teamId].is_empty(path[i]):
-                try:
-                    order.put(path[i])
-                except:
-                    continue
-            # else:
-            #     try:
-            #         order.put(path[i+1])
-            #     except:
-            #         continue
-    return order
 
         
         
 
-    #fill the queu with a corner from each path at a time
-    pass
 
 class Bot:
     def __init__(self):
         print("Initializing your super mega duper bot")
+        self.actions = []
         self.corners = []
+        self.extended_corners =[]
+    
+    def att_corner(self, game_message):
+
+        if not self.corners:
+            self.corners = self.get_path_corners(game_message) 
+            for i in self.corners:
+                self.extended_corners += i
+            shuffle(self.extended_corners)
+            
+
+        try:
+            coin = self.extended_corners.pop(0)
+            if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None:
+                self.actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
+        except:
+            pass
+
+
 
     def get_next_move(self, game_message: GameMessage):
         """
@@ -41,37 +41,13 @@ class Bot:
         """
 
         other_team_ids = [team for team in game_message.teams if team != game_message.teamId]
-        actions = list()
 
-        # if not self.corners:
-        #     self.corners = self.get_path_corners(game_message)
-        # actions.append()
-        for path in game_message.map.paths:
-            for tile in path.tiles:
-                position_up = Position(tile.x, tile.y + 1)
-                position_down = Position(tile.x, tile.y - 1)
-                position_left = Position(tile.x - 1, tile.y) 
-                position_right = Position(tile.x + 1, tile.y)
-                if game_message.playAreas[game_message.teamId].is_empty(position_down):
-                    actions.append(BuildAction(TowerType.SPIKE_SHOOTER, position_down))
+        
 
-                elif game_message.playAreas[game_message.teamId].is_empty(position_up):
-                    actions.append(BuildAction(TowerType.SPIKE_SHOOTER, position_up))
-
-                elif game_message.playAreas[game_message.teamId].is_empty(position_right):
-                    actions.append(BuildAction(TowerType.SPIKE_SHOOTER, position_right))
-
-                elif game_message.playAreas[game_message.teamId].is_empty(position_left):
-                    actions.append(BuildAction(TowerType.SPIKE_SHOOTER, position_left))
+        self.att_corner(game_message)
 
 
-        for coins_par_path in self.corners:
-            for coin in coins_par_path:
-                if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None:
-                    actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
-                    break
-
-        return actions
+        return self.actions
     
     def get_path_corners(self, game_message: GameMessage):
         corners = []
