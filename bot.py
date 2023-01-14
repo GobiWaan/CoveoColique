@@ -5,6 +5,7 @@ from actions import *
 class Bot:
     def __init__(self):
         print("Initializing your super mega duper bot")
+        self.corners = []
 
     def get_next_move(self, game_message: GameMessage):
         """
@@ -14,11 +15,15 @@ class Bot:
         other_team_ids = [team for team in game_message.teams if team != game_message.teamId]
         actions = list()
 
-        actions.append(SellAction(Position(0, 0)))
-        actions.append(BuildAction(TowerType.SPEAR_SHOOTER, Position(0, 0)))
+        if not self.corners:
+            self.corners = self.get_path_corners(game_message)
 
-        if other_team_ids:
-            actions.append(SendReinforcementsAction(EnemyType.LVL1, other_team_ids[0]))
+
+        for coins_par_path in self.corners:
+            for coin in coins_par_path:
+                if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None:
+                    actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
+                    break
 
         return actions
     
