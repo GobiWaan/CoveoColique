@@ -21,3 +21,22 @@ class Bot:
             actions.append(SendReinforcementsAction(EnemyType.LVL1, other_team_ids[0]))
 
         return actions
+    
+    def get_path_corners(self, game_message: GameMessage):
+        corners = []
+        chemins = []
+        
+        for path in game_message.map.paths:
+            chemins.append(path.tiles)
+        
+        for chemin in chemins:
+            coins = []
+            direction = (chemin[1].x - chemin[0].x, chemin[1].y - chemin[0].y)
+            
+            for i in range(len(chemin)-1):
+                new_direction = (chemin[i + 1].x - chemin[i].x, chemin[i + 1].y - chemin[i].y)
+                if new_direction != direction:
+                    coins.append(chemin[i - 1].x + new_direction[0], chemin[i - 1].y + new_direction[1])
+                    direction = new_direction
+            
+            corners.append(coins)
