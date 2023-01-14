@@ -53,12 +53,10 @@ class Bot:
 
         if rand < 0.1:
             if other_team_ids:
-                if game_message.round < 10:
-                    actions.append(SendReinforcementsAction(EnemyType.LVL1, random.choice(other_team_ids)))
-                elif game_message.round > 20:
+                if not rand:
                     actions.append(SendReinforcementsAction(EnemyType.LVL8, random.choice(other_team_ids)))
                 else:
-                    actions.append(self.random_attack(game_message, random.choice(other_team_ids)))
+                    actions.append(SendReinforcementsAction(EnemyType.LVL1, random.choice(other_team_ids)))
         elif 0.1 < rand < 0.45:
             for coins_par_path in self.corners:
                 for coin in coins_par_path:
