@@ -1,6 +1,6 @@
 from game_message import *
 from actions import *
-from random import shuffle
+from random import shuffle, choice
 def Basic_strategy(game_message: GameMessage):
     pass
 
