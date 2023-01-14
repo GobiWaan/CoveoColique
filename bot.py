@@ -36,7 +36,9 @@ class Bot:
             for i in range(len(chemin)-1):
                 new_direction = (chemin[i + 1].x - chemin[i].x, chemin[i + 1].y - chemin[i].y)
                 if new_direction != direction:
-                    coins.append(chemin[i - 1].x + new_direction[0], chemin[i - 1].y + new_direction[1])
+                    coins.append((chemin[i - 1].x + new_direction[0], chemin[i - 1].y + new_direction[1]))
                     direction = new_direction
             
             corners.append(coins)
+        
+        return corners
