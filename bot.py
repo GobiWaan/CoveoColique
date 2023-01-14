@@ -69,3 +69,8 @@ class Bot:
             corners.append(coins)
         
         return corners
+    
+        
+    def random_attack(self, game_message: GameMessage, team_id):
+        attack = choice(game_message.shop.reinforcements.keys())
+        self.actions.append(SendReinforcementsAction(attack, team_id))
