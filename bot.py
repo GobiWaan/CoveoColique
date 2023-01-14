@@ -140,7 +140,9 @@ class Bot:
             for i in range(-2, 3):
                 for j in range(-2, 3):
                     t = game_message.playAreas[game_message.teamId].get_tile_at(Position(tile.x+i, tile.y+j))
-                    if t is not None and t.paths:
+                    if Position(tile.x+i, tile.y+j) in self.spawns or Position(tile.x+i, tile.y+j) in self.gates:
+                        c +=2
+                    elif t is not None and t.paths:
                         c += 1
             return c
 
