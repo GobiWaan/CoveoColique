@@ -10,8 +10,16 @@ class Bot:
         print("Initializing your super mega duper bot")
         self.actions = []
         self.corners = []
-        self.extended_corners =[]
-    
+        self.extended_corners = []
+
+    def upgrade(self, game_message):
+        towers = game_message.playAreas[game_message.teamId].towers
+        enough_for_bomb = game_message.teamInfos[game_message.teamId].money >  600
+        for tower in towers:
+            if tower == "SPEAR_SHOOTER" and enough_for_bomb:
+                self.actions.append(SellAction(tower.position))
+                self.actions.append(BuildAction(TowerType.BOMB_SHOOTER, tower.position))
+
     def att_corner(self, game_message):
 
         if not self.corners:
@@ -41,29 +49,33 @@ class Bot:
 
 
         rand = random.random()
-
-
+        enough_for_bomb = game_message.teamInfos[game_message.teamId].money >  600
+        enough_for_spike = game_message.teamInfos[game_message.teamId].money > 280
+        enough_for_spear = game_message.teamInfos[game_message.teamId].money > 200 
         if rand < 0.3:
             if other_team_ids:
-                if game_message.round < 10:
-                    actions.append(SendReinforcementsAction(EnemyType.LVL1, random.choice(other_team_ids)))
+                if game_message.round < 10 and game_message.teamInfos[game_message.teamId].money > 15 :
+                    self.actions.append(SendReinforcementsAction(EnemyType.LVL1, random.choice(other_team_ids)))
                 else:
-                    actions.append(SendReinforcementsAction(EnemyType.LVL5, random.choice(other_team_ids)))
+                    self.actions.append(SendReinforcementsAction(EnemyType.LVL5, random.choice(other_team_ids)))
         else:
             if 0.3 < rand < 0.6:
                 for coins_par_path in self.corners:
                     for coin in coins_par_path:
-                        if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None:
-                            actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
+                        if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None and enough_for_spike:
+                            self.actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
                             break
             elif 0.6 < rand < 0.8:
                 for side in self.path_sides:
-                    if game_message.playAreas[game_message.teamId].get_tile_at(side) is None:
-                        actions.append(BuildAction(TowerType.SPIKE_SHOOTER, side)) 
+                    if game_message.playAreas[game_message.teamId].get_tile_at(side) is None and enough_for_spike:
+                        self.actions.append(BuildAction(TowerType.SPIKE_SHOOTER, side)) 
             else:
-                actions.append(BuildAction(TowerType.SPEAR_SHOOTER, random.choice(self.get_empty_tiles(game_message))))
+                if enough_for_spear:
+                    self.actions.append(BuildAction(TowerType.SPEAR_SHOOTER, random.choice(self.get_empty_tiles(game_message))))
+                elif enough_for_bomb:
+                    self.upgrade(game_message)
 
-        return actions
+        return self.actions
 
     def get_path_sides(self, game_message: GameMessage):
         w, h = game_message.map.width, game_message.map.height
