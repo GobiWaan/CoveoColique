@@ -1,14 +1,9 @@
 from game_message import *
 from actions import *
 from random import shuffle, choice
-def Basic_strategy(game_message: GameMessage):
-    pass
-
-
-
-        
-        
-
+import random
+from functools import reduce
+import operator
 
 class Bot:
     def __init__(self):
@@ -24,15 +19,10 @@ class Bot:
             for i in self.corners:
                 self.extended_corners += i
             shuffle(self.extended_corners)
-            
 
-        try:
-            coin = self.extended_corners.pop(0)
-            if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None:
-                self.actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
-        except:
-            pass
-
+        coin = self.extended_corners.pop(0)
+        if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None:
+            self.actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
 
 
     def get_next_move(self, game_message: GameMessage):
@@ -40,15 +30,58 @@ class Bot:
         Here is where the magic happens, for now the moves are not very good. I bet you can do better ;)
         """
 
+        actions = list()
+
         other_team_ids = [team for team in game_message.teams if team != game_message.teamId]
 
+        if not self.corners:
+            self.corners = self.get_path_corners(game_message)
+            self.path_sides = self.get_path_sides(game_message)
+            self.path_sides = reduce(operator.add, self.path_sides, [])
+            random.shuffle(self.path_sides)
+
+
+        rand = random.random()
+
+
+        if rand < 0.3:
+            if other_team_ids:
+                if game_message.round < 10:
+                    actions.append(SendReinforcementsAction(EnemyType.LVL1, random.choice(other_team_ids)))
+                else:
+                    actions.append(SendReinforcementsAction(EnemyType.LVL5, random.choice(other_team_ids)))
+        else:
+            if 0.3 < rand < 0.6:
+                for coins_par_path in self.corners:
+                    for coin in coins_par_path:
+                        if game_message.playAreas[game_message.teamId].get_tile_at(Position(*coin)) is None:
+                            actions.append(BuildAction(TowerType.SPIKE_SHOOTER, Position(*coin)))
+                            break
+            elif 0.6 < rand < 0.8:
+                for side in self.path_sides:
+                    if game_message.playAreas[game_message.teamId].get_tile_at(side) is None:
+                        actions.append(BuildAction(TowerType.SPIKE_SHOOTER, side)) 
+            else:
+                actions.append(BuildAction(TowerType.SPEAR_SHOOTER, random.choice(self.get_empty_tiles(game_message))))
+
+        return actions
+
+    def get_path_sides(self, game_message: GameMessage):
+        w, h = game_message.map.width, game_message.map.height
+
+        sides_per_path = []
+
+        for path in game_message.map.paths:
+            sides = []
+            for tile in path.tiles:
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
+                        if game_message.playAreas[game_message.teamId].is_empty(Position(tile.x+i, tile.y+j)):
+                            sides.append(Position(tile.x+i, tile.y+j))
+            sides_per_path.append(sides)
         
+        return sides_per_path
 
-        self.att_corner(game_message)
-
-
-        return self.actions
-    
     def get_path_corners(self, game_message: GameMessage):
         corners = []
         chemins = []
@@ -64,13 +97,27 @@ class Bot:
                 new_direction = (chemin[i + 1].x - chemin[i].x, chemin[i + 1].y - chemin[i].y)
                 if new_direction != direction:
                     coins.append((chemin[i - 1].x + new_direction[0], chemin[i - 1].y + new_direction[1]))
+                    x, y = chemin[i - 1].x + new_direction[0], chemin[i - 1].y + new_direction[1]
+                    if game_message.playAreas[game_message.teamId].is_empty(Position(x, y)):
+                        coins.append((chemin[i - 1].x + new_direction[0], chemin[i - 1].y + new_direction[1]))
                     direction = new_direction
             
             corners.append(coins)
         
         return corners
     
-        
     def random_attack(self, game_message: GameMessage, team_id):
         attack = choice(game_message.shop.reinforcements.keys())
         self.actions.append(SendReinforcementsAction(attack, team_id))
+    
+    def get_empty_tiles(self, game_message: GameMessage) -> List[Position]:
+        w, h = game_message.map.width, game_message.map.height
+
+        empty_tiles = []
+
+        for i in range(w):
+            for j in range(h):
+                if game_message.playAreas[game_message.teamId].is_empty(Position(i, j)):
+                    empty_tiles.append(Position(i, j))
+        
+        return empty_tiles
